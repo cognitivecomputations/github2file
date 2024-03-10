@@ -1,4 +1,5 @@
 import os
+import sys
 import requests
 import zipfile
 import io
@@ -29,9 +30,14 @@ def download_repo(repo_url, output_file):
             outfile.write(file_content)
             outfile.write("\n\n")
 
-# Example usage
-repo_url = "https://github.com/username/repo"
-output_file = "combined_source.txt"
-
-download_repo(repo_url, output_file)
-print(f"Combined source code saved to {output_file}")
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("Usage: python script.py <github_repo_url>")
+        sys.exit(1)
+    
+    repo_url = sys.argv[1]
+    repo_name = repo_url.split("/")[-1]
+    output_file = f"{repo_name}.txt"
+    
+    download_repo(repo_url, output_file)
+    print(f"Combined source code saved to {output_file}")
