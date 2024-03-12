@@ -48,7 +48,7 @@ def remove_comments_and_docstrings(source):
 
 def download_repo(repo_url, output_file):
     """Download and process files from a GitHub repository."""
-    if 'blob' in repo_url:
+    if '/tree/' in repo_url:
         repo_url = f'https://download-directory.github.io/?{repo_url}'
 
     response = requests.get(f"{repo_url}/archive/master.zip")
