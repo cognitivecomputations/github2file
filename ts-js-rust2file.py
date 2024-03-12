@@ -31,16 +31,29 @@ def is_likely_useful_file(file_path):
 
 def download_repo(repo_url, output_file):
     """Download and process files from a GitHub repository."""
+    if 'blob' in repo_url:
+        repo_url = 'https://download-directory.github.io/?' + repo_url
+
     response = requests.get(repo_url + "/archive/master.zip")
     zip_file = zipfile.ZipFile(io.BytesIO(response.content))
 
     with open(output_file, "w", encoding="utf-8") as outfile:
         for file_path in zip_file.namelist():
-            # Skip directories, non-desired files, less likely useful files, hidden directories, and test files
-            if file_path.endswith("/") or not is_desired_file(file_path) or not is_likely_useful_file(file_path):
+            # Skip directories, non-Python files, less likely useful files, hidden directories, and test files
+            if file_path.endswith("/") or not is_python_file(file_path) or not is_likely_useful_file(file_path):
                 continue
 
             file_content = zip_file.read(file_path).decode("utf-8")
+
+            # Skip test files based on content and files with insufficient substantive content
+            if is_test_file(file_content) or not has_sufficient_content(file_content):
+                continue
+
+            try:
+                file_content = remove_comments_and_docstrings(file_content)
+            except SyntaxError:
+                # Skip files with syntax errors
+                continue
 
             outfile.write(f"# File: {file_path}\n")
             outfile.write(file_content)
