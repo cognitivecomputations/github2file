@@ -50,7 +50,7 @@ def remove_comments_and_docstrings(source):
             node.value.s = ""  # Remove comments
     return ast.unparse(tree)
 
-def download_repo(repo_url, output_file, branch_or_tag="master"):
+def download_repo(repo_url, output_file, keep_comments=False, branch_or_tag="master"):
     """Download and process files from a GitHub repository."""
     download_url = f"{repo_url}/archive/refs/heads/{branch_or_tag}.zip"  # Flexible URL for branches or tags
     response = requests.get(download_url)
@@ -69,11 +69,12 @@ def download_repo(repo_url, output_file, branch_or_tag="master"):
                 if is_test_file(file_content) or not has_sufficient_content(file_content):
                     continue
 
-                try:
-                    file_content = remove_comments_and_docstrings(file_content)
-                except SyntaxError:
-                    # Skip files with syntax errors
-                    continue
+                if not keep_comments:
+                    try:
+                        file_content = remove_comments_and_docstrings(file_content)
+                    except SyntaxError:
+                        # Skip files with syntax errors
+                        continue
                 
                 outfile.write(f"# File: {file_path}\n")
                 outfile.write(file_content)
@@ -83,13 +84,14 @@ def download_repo(repo_url, output_file, branch_or_tag="master"):
         sys.exit(1)
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2 or len(sys.argv) > 3:
-        print("Usage: python script.py <github_repo_url> [branch_or_tag]")
+    if len(sys.argv) < 2 or len(sys.argv) > 4:
+        print("Usage: python script.py <github_repo_url> [--keep-comments] [branch_or_tag]")
         sys.exit(1)
     
     repo_url = sys.argv[1]
-    branch_or_tag = sys.argv[2] if len(sys.argv) == 3 else "master"  # Flexible for branch or tag
+    keep_comments = '--keep-comments' in sys.argv
+    branch_or_tag = sys.argv[-1] if not keep_comments else 'master'
     output_file = f"{repo_url.split('/')[-1]}_python.txt"
     
-    download_repo(repo_url, output_file, branch_or_tag)
+    download_repo(repo_url, output_file, keep_comments, branch_or_tag)
     print(f"Combined Python source code saved to {output_file}")
