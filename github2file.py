@@ -50,43 +50,48 @@ def remove_comments_and_docstrings(source):
             node.value.s = ""  # Remove comments
     return ast.unparse(tree)
 
-def download_repo(repo_url, output_file, keep_comments=False):
+def download_repo(repo_url, output_file, keep_comments=False, branch_or_tag="master"):
     """Download and process files from a GitHub repository."""
-    response = requests.get(repo_url + "/archive/master.zip")
-    zip_file = zipfile.ZipFile(io.BytesIO(response.content))
-
-    with open(output_file, "w", encoding="utf-8") as outfile:
-        for file_path in zip_file.namelist():
-            # Skip directories, non-Python files, less likely useful files, hidden directories, and test files
-            if file_path.endswith("/") or not is_python_file(file_path) or not is_likely_useful_file(file_path):
-                continue
-
-            file_content = zip_file.read(file_path).decode("utf-8")
-            
-            # Skip test files based on content and files with insufficient substantive content
-            if is_test_file(file_content) or not has_sufficient_content(file_content):
-                continue
-			
-            if not keep_comments:
-                try:
-                    file_content = remove_comments_and_docstrings(file_content)
-                except SyntaxError:
-                    # Skip files with syntax errors
+    download_url = f"{repo_url}/archive/refs/heads/{branch_or_tag}.zip"  # Flexible URL for branches or tags
+    response = requests.get(download_url)
+    
+    if response.status_code == 200:
+        zip_file = zipfile.ZipFile(io.BytesIO(response.content))
+        with open(output_file, "w", encoding="utf-8") as outfile:
+            for file_path in zip_file.namelist():
+                # Skip directories, non-Python files, less likely useful files, hidden directories, and test files
+                if file_path.endswith("/") or not is_python_file(file_path) or not is_likely_useful_file(file_path):
                     continue
-            
-            outfile.write(f"# File: {file_path}\n")
-            outfile.write(file_content)
-            outfile.write("\n\n")
+
+                file_content = zip_file.read(file_path).decode("utf-8")
+                
+                # Skip test files based on content and files with insufficient substantive content
+                if is_test_file(file_content) or not has_sufficient_content(file_content):
+                    continue
+
+                if not keep_comments:
+                    try:
+                        file_content = remove_comments_and_docstrings(file_content)
+                    except SyntaxError:
+                        # Skip files with syntax errors
+                        continue
+                
+                outfile.write(f"# File: {file_path}\n")
+                outfile.write(file_content)
+                outfile.write("\n\n")
+    else:
+        print(f"Failed to download the repository. Status code: {response.status_code}")
+        sys.exit(1)
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2 or len(sys.argv) > 3:
-        print("Usage: python script.py <github_repo_url> [--keep-comments]")
+    if len(sys.argv) < 2 or len(sys.argv) > 4:
+        print("Usage: python script.py <github_repo_url> [--keep-comments] [branch_or_tag]")
         sys.exit(1)
     
     repo_url = sys.argv[1]
-    keep_comments = len(sys.argv) == 3 and sys.argv[2] == "--keep-comments"
-    repo_name = repo_url.split("/")[-1]
-    output_file = f"{repo_name}_python.txt"
+    keep_comments = '--keep-comments' in sys.argv
+    branch_or_tag = sys.argv[-1] if not keep_comments else 'master'
+    output_file = f"{repo_url.split('/')[-1]}_python.txt"
     
-    download_repo(repo_url, output_file, keep_comments)
+    download_repo(repo_url, output_file, keep_comments, branch_or_tag)
     print(f"Combined Python source code saved to {output_file}")
