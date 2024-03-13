@@ -50,7 +50,7 @@ def remove_comments_and_docstrings(source):
             node.value.s = ""  # Remove comments
     return ast.unparse(tree)
 
-def download_repo(repo_url, output_file):
+def download_repo(repo_url, output_file, keep_comments=False):
     """Download and process files from a GitHub repository."""
     response = requests.get(repo_url + "/archive/master.zip")
     zip_file = zipfile.ZipFile(io.BytesIO(response.content))
@@ -66,25 +66,27 @@ def download_repo(repo_url, output_file):
             # Skip test files based on content and files with insufficient substantive content
             if is_test_file(file_content) or not has_sufficient_content(file_content):
                 continue
-
-            try:
-                file_content = remove_comments_and_docstrings(file_content)
-            except SyntaxError:
-                # Skip files with syntax errors
-                continue
+			
+            if not keep_comments:
+                try:
+                    file_content = remove_comments_and_docstrings(file_content)
+                except SyntaxError:
+                    # Skip files with syntax errors
+                    continue
             
             outfile.write(f"# File: {file_path}\n")
             outfile.write(file_content)
             outfile.write("\n\n")
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python script.py <github_repo_url>")
+    if len(sys.argv) < 2 or len(sys.argv) > 3:
+        print("Usage: python script.py <github_repo_url> [--keep-comments]")
         sys.exit(1)
     
     repo_url = sys.argv[1]
+    keep_comments = len(sys.argv) == 3 and sys.argv[2] == "--keep-comments"
     repo_name = repo_url.split("/")[-1]
     output_file = f"{repo_name}_python.txt"
     
-    download_repo(repo_url, output_file)
+    download_repo(repo_url, output_file, keep_comments)
     print(f"Combined Python source code saved to {output_file}")
