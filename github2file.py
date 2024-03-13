@@ -52,7 +52,7 @@ def remove_comments_and_docstrings(source):
 
 def download_repo(repo_url, output_file, branch_or_tag="master"):
     """Download and process files from a GitHub repository."""
-    download_url = f"{repo_url}/archive/{branch_or_tag}.zip"  # Updated URL
+    download_url = f"{repo_url}/archive/refs/heads/{branch_or_tag}.zip"  # Updated URL
     response = requests.get(download_url)
     
     zip_file = zipfile.ZipFile(io.BytesIO(response.content))
