@@ -50,9 +50,11 @@ def remove_comments_and_docstrings(source):
             node.value.s = ""  # Remove comments
     return ast.unparse(tree)
 
-def download_repo(repo_url, output_file):
+def download_repo(repo_url, output_file, branch_or_tag="master"):
     """Download and process files from a GitHub repository."""
-    response = requests.get(repo_url + "/archive/master.zip")
+    download_url = f"{repo_url}/archive/{branch_or_tag}.zip"  # Updated URL
+    response = requests.get(download_url)
+    
     zip_file = zipfile.ZipFile(io.BytesIO(response.content))
 
     with open(output_file, "w", encoding="utf-8") as outfile:
@@ -78,13 +80,14 @@ def download_repo(repo_url, output_file):
             outfile.write("\n\n")
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python script.py <github_repo_url>")
+    if len(sys.argv) < 2 or len(sys.argv) > 3:
+        print("Usage: python script.py <github_repo_url> [branch_name]")
         sys.exit(1)
     
     repo_url = sys.argv[1]
     repo_name = repo_url.split("/")[-1]
+    branch_name = sys.argv[2] if len(sys.argv) == 3 else "master"  # Default to "master"
     output_file = f"{repo_name}_python.txt"
     
-    download_repo(repo_url, output_file)
+    download_repo(repo_url, output_file, branch_name)
     print(f"Combined Python source code saved to {output_file}")
