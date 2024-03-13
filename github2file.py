@@ -52,42 +52,44 @@ def remove_comments_and_docstrings(source):
 
 def download_repo(repo_url, output_file, branch_or_tag="master"):
     """Download and process files from a GitHub repository."""
-    download_url = f"{repo_url}/archive/refs/heads/{branch_or_tag}.zip"  # Updated URL
+    download_url = f"{repo_url}/archive/refs/heads/{branch_or_tag}.zip"  # Flexible URL for branches or tags
     response = requests.get(download_url)
     
-    zip_file = zipfile.ZipFile(io.BytesIO(response.content))
+    if response.status_code == 200:
+        zip_file = zipfile.ZipFile(io.BytesIO(response.content))
+        with open(output_file, "w", encoding="utf-8") as outfile:
+            for file_path in zip_file.namelist():
+                # Skip directories, non-Python files, less likely useful files, hidden directories, and test files
+                if file_path.endswith("/") or not is_python_file(file_path) or not is_likely_useful_file(file_path):
+                    continue
 
-    with open(output_file, "w", encoding="utf-8") as outfile:
-        for file_path in zip_file.namelist():
-            # Skip directories, non-Python files, less likely useful files, hidden directories, and test files
-            if file_path.endswith("/") or not is_python_file(file_path) or not is_likely_useful_file(file_path):
-                continue
+                file_content = zip_file.read(file_path).decode("utf-8")
+                
+                # Skip test files based on content and files with insufficient substantive content
+                if is_test_file(file_content) or not has_sufficient_content(file_content):
+                    continue
 
-            file_content = zip_file.read(file_path).decode("utf-8")
-            
-            # Skip test files based on content and files with insufficient substantive content
-            if is_test_file(file_content) or not has_sufficient_content(file_content):
-                continue
-
-            try:
-                file_content = remove_comments_and_docstrings(file_content)
-            except SyntaxError:
-                # Skip files with syntax errors
-                continue
-            
-            outfile.write(f"# File: {file_path}\n")
-            outfile.write(file_content)
-            outfile.write("\n\n")
+                try:
+                    file_content = remove_comments_and_docstrings(file_content)
+                except SyntaxError:
+                    # Skip files with syntax errors
+                    continue
+                
+                outfile.write(f"# File: {file_path}\n")
+                outfile.write(file_content)
+                outfile.write("\n\n")
+    else:
+        print(f"Failed to download the repository. Status code: {response.status_code}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     if len(sys.argv) < 2 or len(sys.argv) > 3:
-        print("Usage: python script.py <github_repo_url> [branch_name]")
+        print("Usage: python script.py <github_repo_url> [branch_or_tag]")
         sys.exit(1)
     
     repo_url = sys.argv[1]
-    repo_name = repo_url.split("/")[-1]
-    branch_name = sys.argv[2] if len(sys.argv) == 3 else "master"  # Default to "master"
-    output_file = f"{repo_name}_python.txt"
+    branch_or_tag = sys.argv[2] if len(sys.argv) == 3 else "master"  # Flexible for branch or tag
+    output_file = f"{repo_url.split('/')[-1]}_python.txt"
     
-    download_repo(repo_url, output_file, branch_name)
+    download_repo(repo_url, output_file, branch_or_tag)
     print(f"Combined Python source code saved to {output_file}")
