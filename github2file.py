@@ -52,7 +52,10 @@ def remove_comments_and_docstrings(source):
 
 def download_repo(repo_url, output_file, keep_comments=False, branch_or_tag="master"):
     """Download and process files from a GitHub repository."""
-    download_url = f"{repo_url}/archive/refs/heads/{branch_or_tag}.zip"  # Flexible URL for branches or tags
+    download_url = f"{repo_url}/archive/refs/heads/{branch_or_tag}.zip"
+        
+        
+    print(download_url)
     response = requests.get(download_url)
     
     if response.status_code == 200:
@@ -83,15 +86,18 @@ def download_repo(repo_url, output_file, keep_comments=False, branch_or_tag="mas
         print(f"Failed to download the repository. Status code: {response.status_code}")
         sys.exit(1)
 
+import argparse
+
 if __name__ == "__main__":
-    if len(sys.argv) < 2 or len(sys.argv) > 4:
-        print("Usage: python script.py <github_repo_url> [--keep-comments] [branch_or_tag]")
-        sys.exit(1)
     
-    repo_url = sys.argv[1]
-    keep_comments = '--keep-comments' in sys.argv
-    branch_or_tag = sys.argv[-1] if not keep_comments else 'master'
-    output_file = f"{repo_url.split('/')[-1]}_python.txt"
+    parser = argparse.ArgumentParser(description='Download and process files from a GitHub repository.')
+    parser.add_argument('repo_url', type=str, help='The URL of the GitHub repository')
+    parser.add_argument('--keep-comments', action='store_true', help='Keep comments and docstrings in the source code')
+    parser.add_argument('--branch_or_tag', type=str, help='The branch or tag of the repository to download',default="master")
     
-    download_repo(repo_url, output_file, keep_comments, branch_or_tag)
+    args = parser.parse_args()
+
+    output_file = f"{args.repo_url.split('/')[-1]}_python.txt"
+    
+    download_repo(args.repo_url, output_file, args.keep_comments, args.branch_or_tag)
     print(f"Combined Python source code saved to {output_file}")
