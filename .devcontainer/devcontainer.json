@@ -23,6 +23,5 @@
         ]
       }
     },
-    "postCreateCommand": "sudo apt-get install -y python3-tk && pip3 install -r requirements.txt",
-    "postAttachCommand": "python app.py -p 5000"
+    "postCreateCommand": "sudo apt-get update && sudo apt-get install -y python3-tk && pip3 install -r requirements.txt"
   }
