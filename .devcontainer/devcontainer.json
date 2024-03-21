@@ -1,0 +1,25 @@
+{
+    "name": "Python 3",
+    "image": "mcr.microsoft.com/devcontainers/python:3.12-bookworm",
+    "customizations": {
+      "vscode": {
+        "settings": {
+          "python.defaultInterpreterPath": "/usr/local/bin/python",
+          "python.formatting.autopep8Path": "/usr/local/py-utils/bin/autopep8",
+          "python.formatting.blackPath": "/usr/local/py-utils/bin/black",
+          "python.formatting.yapfPath": "/usr/local/py-utils/bin/yapf",
+          "python.linting.banditPath": "/usr/local/py-utils/bin/bandit",
+          "python.linting.flake8Path": "/usr/local/py-utils/bin/flake8",
+          "python.linting.mypyPath": "/usr/local/py-utils/bin/mypy",
+          "python.linting.pycodestylePath": "/usr/local/py-utils/bin/pycodestyle",
+          "python.linting.pydocstylePath": "/usr/local/py-utils/bin/pydocstyle",
+          "python.linting.pylintPath": "/usr/local/py-utils/bin/pylint"
+        },
+        "extensions": [
+          "ms-python.python",
+          "ms-python.vscode-pylance"
+        ]
+      }
+    },
+    "postCreateCommand": "sudo apt-get update && sudo apt-get install -y python3-tk && pip3 install -r requirements.txt"
+  }
