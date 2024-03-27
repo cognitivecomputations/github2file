@@ -4,10 +4,22 @@ import requests
 import zipfile
 import io
 import ast
+from typing import List
 
-def is_file_type(file_path, file_extension):
+def get_language_extensions(language: str) -> List[str]:
+    language_extensions = {
+        "python": [".py", ".pyw"],
+        "go": [".go"],
+    }
+
+    return language_extensions[language.lower()]
+
+def is_file_type(file_path: str, language: str) -> bool:
     """Check if the file has the specified file extension."""
-    return file_path.endswith(file_extension)
+    for extension in get_language_extensions(language):
+        if file_path.endswith(extension):
+            return True
+    return False
 
 def is_likely_useful_file(file_path, lang):
     """Determine if the file is likely to be useful by excluding certain directories and specific file types."""
@@ -74,7 +86,7 @@ def download_repo(repo_url, output_file, lang, keep_comments=False, branch_or_ta
         with open(output_file, "w", encoding="utf-8") as outfile:
             for file_path in zip_file.namelist():
                 # Skip directories, non-language files, less likely useful files, hidden directories, and test files
-                if file_path.endswith("/") or not is_file_type(file_path, f".{lang}") or not is_likely_useful_file(file_path, lang):
+                if file_path.endswith("/") or not is_file_type(file_path, lang) or not is_likely_useful_file(file_path, lang):
                     continue
                 file_content = zip_file.read(file_path).decode("utf-8")
 
@@ -87,7 +99,6 @@ def download_repo(repo_url, output_file, lang, keep_comments=False, branch_or_ta
                     except SyntaxError:
                         # Skip files with syntax errors
                         continue
-
                 outfile.write(f"// File: {file_path}\n" if lang == "go" else f"# File: {file_path}\n")
                 outfile.write(file_content)
                 outfile.write("\n\n")
