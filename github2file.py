@@ -10,6 +10,7 @@ def get_language_extensions(language: str) -> List[str]:
     language_extensions = {
         "python": [".py", ".pyw"],
         "go": [".go"],
+        "md": [".md", ".markdown"],
     }
 
     return language_extensions[language.lower()]
@@ -34,6 +35,8 @@ def is_likely_useful_file(file_path, lang):
     elif lang == "go":
         excluded_dirs.append("vendor")
         utility_or_config_files.extend(["go.mod", "go.sum", "Makefile"])
+    elif lang == "md":
+        excluded_dirs.extend(["assets", "images"])
 
     if any(part.startswith('.') for part in file_path.split('/')):
         return False
@@ -111,7 +114,7 @@ import argparse
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Download and process files from a GitHub repository.')
     parser.add_argument('repo_url', type=str, help='The URL of the GitHub repository')
-    parser.add_argument('--lang', type=str, choices=['go', 'python'], default='python', help='The programming language of the repository')
+    parser.add_argument('--lang', type=str, choices=['go', 'python', 'md'], default='python', help='The programming language of the repository')
     parser.add_argument('--keep-comments', action='store_true', help='Keep comments and docstrings in the source code (only applicable for Python)')
     parser.add_argument('--branch_or_tag', type=str, help='The branch or tag of the repository to download', default="master")
 
