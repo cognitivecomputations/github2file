@@ -10,8 +10,9 @@ def get_language_extensions(language: str) -> List[str]:
     language_extensions = {
         "python": [".py", ".pyw"],
         "go": [".go"],
-        "md": [".md", ".markdown"],
+        "md": [".md"],  # Add .md extension for Markdown files
     }
+    return language_extensions[language.lower()]
 
     return language_extensions[language.lower()]
 
@@ -24,7 +25,7 @@ def is_file_type(file_path: str, language: str) -> bool:
 
 def is_likely_useful_file(file_path, lang):
     """Determine if the file is likely to be useful by excluding certain directories and specific file types."""
-    excluded_dirs = ["docs", "examples", "tests", "test", "scripts", "utils", "benchmarks"]
+    excluded_dirs = ["examples", "tests", "test", "scripts", "utils", "benchmarks"]
     utility_or_config_files = []
     github_workflow_or_docs = [".github", ".gitignore", "LICENSE", "README"]
 
@@ -35,8 +36,6 @@ def is_likely_useful_file(file_path, lang):
     elif lang == "go":
         excluded_dirs.append("vendor")
         utility_or_config_files.extend(["go.mod", "go.sum", "Makefile"])
-    elif lang == "md":
-        excluded_dirs.extend(["assets", "images"])
 
     if any(part.startswith('.') for part in file_path.split('/')):
         return False
