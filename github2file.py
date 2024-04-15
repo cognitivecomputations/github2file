@@ -10,6 +10,8 @@ def get_language_extensions(language: str) -> List[str]:
     language_extensions = {
         "python": [".py", ".pyw"],
         "go": [".go"],
+        "javascript": [".js", ".jsx", ".ts", ".tsx"],
+        "java": [".java"],
         "md": [".md"],  # Add .md extension for Markdown files
     }
     return language_extensions[language.lower()]
@@ -113,7 +115,7 @@ import argparse
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Download and process files from a GitHub repository.')
     parser.add_argument('repo_url', type=str, help='The URL of the GitHub repository')
-    parser.add_argument('--lang', type=str, choices=['go', 'python', 'md'], default='python', help='The programming language of the repository')
+    parser.add_argument('--lang', type=str, choices=['go', 'python', 'javascript', 'java', 'md'], default='python', help='The programming language of the repository')
     parser.add_argument('--keep-comments', action='store_true', help='Keep comments and docstrings in the source code (only applicable for Python)')
     parser.add_argument('--branch_or_tag', type=str, help='The branch or tag of the repository to download', default="master")
 
