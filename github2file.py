@@ -10,7 +10,7 @@ from typing import List
 def get_language_extensions(language: str) -> List[str]:
     """Return a list of file extensions for the specified programming language."""
     language_extensions = {
-        "python": [".py", ".pyw", ".md"],  # Add .ipynb extension for Python notebooks
+        "python": [".py", ".pyw"],  # Add .ipynb extension for Python notebooks
         #TODO convert python notebooks to python files or some format that allow conversion between notebook and python file.
         "go": [".go"],
         "md": [".md"],  # Markdown files
@@ -207,4 +207,4 @@ if __name__ == "__main__":
         print(f"Error: {e}")
         sys.exit(1)
 
-    print(f"Combined {args.lang.capitalize()} source code saved to {output_file}")
+    print(f"Combined {args.lang.capitalize()} source code saved to repos/{output_file}")
