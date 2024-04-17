@@ -6,7 +6,7 @@ This Python script allows you to download and process files from a GitHub reposi
 
 - Download and process files from a GitHub repository
 - Support for both public and private repositories
-- Filter files based on programming language (Python or Go)
+- Filter files based on programming language (Python, Markdown or Go)
 - Exclude certain directories, file types, and test files
 - Remove comments and docstrings from Python source code (optional)
 - Specify a branch or tag to download from (default: "master")
@@ -29,7 +29,7 @@ Replace `<USERNAME>` with your GitHub username and `<GITHUB_ACCESS_TOKEN>` with 
 
 ### Optional Arguments
 
-- `--lang`: Specify the programming language of the repository. Choices: "go" or "python" (default: "python").
+- `--lang`: Specify the programming language of the repository. Choices: "md", "go" or "python" (default: "python").
 - `--keep-comments`: Keep comments and docstrings in the source code (only applicable for Python).
 - `--branch_or_tag`: Specify the branch or tag of the repository to download (default: "master").
 
