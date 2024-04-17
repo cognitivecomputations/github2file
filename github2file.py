@@ -7,24 +7,21 @@ import ast
 from typing import List
 
 def get_language_extensions(language: str) -> List[str]:
+    """Return a list of file extensions for the specified programming language."""
     language_extensions = {
         "python": [".py", ".pyw"],
         "go": [".go"],
-        "md": [".md"],  # Add .md extension for Markdown files
+        "md": [".md"],  # Markdown files
     }
     return language_extensions[language.lower()]
 
-    return language_extensions[language.lower()]
-
 def is_file_type(file_path: str, language: str) -> bool:
-    """Check if the file has the specified file extension."""
-    for extension in get_language_extensions(language):
-        if file_path.endswith(extension):
-            return True
-    return False
+    """Check if the file has a valid extension for the specified language."""
+    extensions = get_language_extensions(language)
+    return any(file_path.endswith(ext) for ext in extensions)
 
 def is_likely_useful_file(file_path, lang):
-    """Determine if the file is likely to be useful by excluding certain directories and specific file types."""
+    """Determine if the file is likely useful by applying various filters."""
     excluded_dirs = ["examples", "tests", "test", "scripts", "utils", "benchmarks"]
     utility_or_config_files = []
     github_workflow_or_docs = [".github", ".gitignore", "LICENSE", "README"]
@@ -54,12 +51,12 @@ def is_likely_useful_file(file_path, lang):
 
 def is_test_file(file_content, lang):
     """Determine if the file content suggests it is a test file."""
-    test_indicators = []
-    if lang == "python":
-        test_indicators = ["import unittest", "import pytest", "from unittest", "from pytest"]
-    elif lang == "go":
-        test_indicators = ["import testing", "func Test"]
-    return any(indicator in file_content for indicator in test_indicators)
+    test_indicators = {
+        "python": ["import unittest", "import pytest", "from unittest", "from pytest"],
+        "go": ["import testing", "func Test"]
+    }
+    indicators = test_indicators.get(lang, [])
+    return any(indicator in file_content for indicator in indicators)
 
 def has_sufficient_content(file_content, min_line_count=10):
     """Check if the file has a minimum number of substantive lines."""
@@ -76,16 +73,21 @@ def remove_comments_and_docstrings(source):
             node.value.s = ""  # Remove comments
     return ast.unparse(tree)
 
-def download_repo(repo_url, output_file, lang, keep_comments=False, branch_or_tag="master"):
+def download_repo(repo_url, output_file, lang, keep_comments=False, branch_or_tag="master", claude=False):
     """Download and process files from a GitHub repository."""
     download_url = f"{repo_url}/archive/refs/heads/{branch_or_tag}.zip"
 
-    print(download_url)
+    print(f"Downloading from: {download_url}")
     response = requests.get(download_url)
 
     if response.status_code == 200:
         zip_file = zipfile.ZipFile(io.BytesIO(response.content))
         with open(output_file, "w", encoding="utf-8") as outfile:
+            if claude and isinstance(claude, bool):
+                outfile.write("Here are some documents for you to reference for your task:\n\n")
+                outfile.write("<documents>\n")
+
+            index = 1
             for file_path in zip_file.namelist():
                 # Skip directories, non-language files, less likely useful files, hidden directories, and test files
                 if file_path.endswith("/") or not is_file_type(file_path, lang) or not is_likely_useful_file(file_path, lang):
@@ -101,14 +103,23 @@ def download_repo(repo_url, output_file, lang, keep_comments=False, branch_or_ta
                     except SyntaxError:
                         # Skip files with syntax errors
                         continue
-                outfile.write(f"// File: {file_path}\n" if lang == "go" else f"# File: {file_path}\n")
-                outfile.write(file_content)
-                outfile.write("\n\n")
+
+                if claude and isinstance(claude, bool):
+                    outfile.write(f"<document index=\"{index}\">\n")
+                    outfile.write(f"<source>{file_path}</source>\n")
+                    outfile.write(f"<document_content>\n{file_content}\n</document_content>\n")
+                    outfile.write("</document>\n\n")
+                    index += 1
+                else:
+                    outfile.write(f"{'// ' if lang == 'go' else '# '}File: {file_path}\n")
+                    outfile.write(file_content)
+                    outfile.write("\n\n")
+
+            if claude and isinstance(claude, bool):
+                outfile.write("</documents>")
     else:
         print(f"Failed to download the repository. Status code: {response.status_code}")
         sys.exit(1)
-
-import argparse
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Download and process files from a GitHub repository.')
@@ -116,9 +127,11 @@ if __name__ == "__main__":
     parser.add_argument('--lang', type=str, choices=['go', 'python', 'md'], default='python', help='The programming language of the repository')
     parser.add_argument('--keep-comments', action='store_true', help='Keep comments and docstrings in the source code (only applicable for Python)')
     parser.add_argument('--branch_or_tag', type=str, help='The branch or tag of the repository to download', default="master")
+    parser.add_argument('--claude', action='store_true', help='Format the output for Claude with document tags')
 
     args = parser.parse_args()
-    output_file = f"{args.repo_url.split('/')[-1]}_{args.lang}.txt"
+    output_file_base = f"{args.repo_url.split('/')[-1]}_{args.lang}.txt"
+    output_file = output_file_base if not args.claude else f"{output_file_base}-claude.txt"
 
-    download_repo(args.repo_url, output_file, args.lang, args.keep_comments, args.branch_or_tag)
+    download_repo(args.repo_url, output_file, args.lang, args.keep_comments, args.branch_or_tag, args.claude)
     print(f"Combined {args.lang.capitalize()} source code saved to {output_file}")
