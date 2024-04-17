@@ -9,7 +9,8 @@ from typing import List
 def get_language_extensions(language: str) -> List[str]:
     """Return a list of file extensions for the specified programming language."""
     language_extensions = {
-        "python": [".py", ".pyw"],
+        "python": [".py", ".pyw"],  # Add .ipynb extension for Python notebooks
+        #TODO convert python notebooks to python files or some format that allow conversion between notebook and python file.
         "go": [".go"],
         "md": [".md"],  # Markdown files
     }
@@ -121,7 +122,21 @@ def download_repo(repo_url, output_file, lang, keep_comments=False, branch_or_ta
         print(f"Failed to download the repository. Status code: {response.status_code}")
         sys.exit(1)
 
+def print_usage():
+    print("Usage: python github2file.py <repo_url> [--lang <language>] [--keep-comments] [--branch_or_tag <branch_or_tag>] [--claude]")
+    print("Options:")
+    print("  <repo_url>               The URL of the GitHub repository")
+    print("  --lang <language>        The programming language of the repository (choices: go, python, md). Default: python")
+    print("  --keep-comments          Keep comments and docstrings in the source code (only applicable for Python)")
+    print("  --branch_or_tag <branch_or_tag>  The branch or tag of the repository to download. Default: master")
+    print("  --claude                 Format the output for Claude with document tags")
+
 if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Error: Repository URL is required.")
+        print_usage()
+        sys.exit(1)
+
     parser = argparse.ArgumentParser(description='Download and process files from a GitHub repository.')
     parser.add_argument('repo_url', type=str, help='The URL of the GitHub repository')
     parser.add_argument('--lang', type=str, choices=['go', 'python', 'md'], default='python', help='The programming language of the repository')
@@ -133,5 +148,10 @@ if __name__ == "__main__":
     output_file_base = f"{args.repo_url.split('/')[-1]}_{args.lang}.txt"
     output_file = output_file_base if not args.claude else f"{output_file_base}-claude.txt"
 
-    download_repo(args.repo_url, output_file, args.lang, args.keep_comments, args.branch_or_tag, args.claude)
+    try:
+        download_repo(args.repo_url, output_file, args.lang, args.keep_comments, args.branch_or_tag, args.claude)
+    except Exception as e:
+        print(f"Error: {e}")
+        sys.exit(1)
+
     print(f"Combined {args.lang.capitalize()} source code saved to {output_file}")
