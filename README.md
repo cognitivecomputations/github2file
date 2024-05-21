@@ -11,6 +11,12 @@ This Python script allows you to download and process files from a GitHub reposi
 - Remove comments and docstrings from Python source code (optional)
 - Specify a branch or tag to download from (default: "master")
 
+## Install
+
+- conda create -n g2f python=3.10
+- conda activate g2f
+- pip install -r requirements.txt 
+
 ## Usage
 
 To download and process files from a public GitHub repository, run the following command:
