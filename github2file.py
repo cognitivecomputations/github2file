@@ -14,8 +14,6 @@ def get_language_extensions(language: str) -> List[str]:
     }
     return language_extensions[language.lower()]
 
-    return language_extensions[language.lower()]
-
 def is_file_type(file_path: str, language: str) -> bool:
     """Check if the file has the specified file extension."""
     for extension in get_language_extensions(language):
@@ -27,12 +25,12 @@ def is_likely_useful_file(file_path, lang):
     """Determine if the file is likely to be useful by excluding certain directories and specific file types."""
     excluded_dirs = ["examples", "tests", "test", "scripts", "utils", "benchmarks"]
     utility_or_config_files = []
-    github_workflow_or_docs = [".github", ".gitignore", "LICENSE", "README"]
+    workflow_or_docs = [".github", ".gitlab-ci.yml", ".gitignore", "LICENSE", "README"]
 
     if lang == "python":
         excluded_dirs.append("__pycache__")
         utility_or_config_files.extend(["hubconf.py", "setup.py"])
-        github_workflow_or_docs.extend(["stale.py", "gen-card-", "write_model_card"])
+        workflow_or_docs.extend(["stale.py", "gen-card-", "write_model_card"])
     elif lang == "go":
         excluded_dirs.append("vendor")
         utility_or_config_files.extend(["go.mod", "go.sum", "Makefile"])
@@ -47,7 +45,7 @@ def is_likely_useful_file(file_path, lang):
     for file_name in utility_or_config_files:
         if file_name in file_path:
             return False
-    for doc_file in github_workflow_or_docs:
+    for doc_file in workflow_or_docs:
         if doc_file in file_path:
             return False
     return True
@@ -76,12 +74,29 @@ def remove_comments_and_docstrings(source):
             node.value.s = ""  # Remove comments
     return ast.unparse(tree)
 
-def download_repo(repo_url, output_file, lang, keep_comments=False, branch_or_tag="master"):
-    """Download and process files from a GitHub repository."""
-    download_url = f"{repo_url}/archive/refs/heads/{branch_or_tag}.zip"
+def construct_download_url(repo_url, branch_or_tag):
+    """Construct the appropriate download URL for GitHub or GitLab based on the provided URL."""
+    if "github.com" in repo_url:
+        return f"{repo_url}/archive/refs/heads/{branch_or_tag}.zip"
+    elif "gitlab.com" in repo_url:
+        repo_name = repo_url.rstrip('/').split('/')[-1].replace('.git', '')
+        return f"{repo_url.rstrip('.git')}/-/archive/{branch_or_tag}/{repo_name}-{branch_or_tag}.zip"
+    else:
+        raise ValueError("Unsupported repository URL. Only GitHub and GitLab URLs are supported.")
+
+def download_repo(repo_url, output_file, lang, keep_comments=False, branch_or_tag="main", token=None):
+    """Download and process files from a GitHub or GitLab repository."""
+    download_url = construct_download_url(repo_url, branch_or_tag)
+    headers = {}
+
+    if token:
+        if "gitlab.com" in repo_url:
+            headers['PRIVATE-TOKEN'] = token
+        elif "github.com" in repo_url:
+            headers['Authorization'] = f'token {token}'
 
     print(download_url)
-    response = requests.get(download_url)
+    response = requests.get(download_url, headers=headers)
 
     if response.status_code == 200:
         zip_file = zipfile.ZipFile(io.BytesIO(response.content))
@@ -111,14 +126,15 @@ def download_repo(repo_url, output_file, lang, keep_comments=False, branch_or_ta
 import argparse
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Download and process files from a GitHub repository.')
-    parser.add_argument('repo_url', type=str, help='The URL of the GitHub repository')
+    parser = argparse.ArgumentParser(description='Download and process files from a GitHub or GitLab repository.')
+    parser.add_argument('repo_url', type=str, help='The URL of the GitHub or GitLab repository')
     parser.add_argument('--lang', type=str, choices=['go', 'python', 'md'], default='python', help='The programming language of the repository')
     parser.add_argument('--keep-comments', action='store_true', help='Keep comments and docstrings in the source code (only applicable for Python)')
-    parser.add_argument('--branch_or_tag', type=str, help='The branch or tag of the repository to download', default="master")
+    parser.add_argument('--branch_or_tag', type=str, help='The branch or tag of the repository to download', default="main")
+    parser.add_argument('--token', type=str, help='Personal access token for private repositories', default=None)
 
     args = parser.parse_args()
     output_file = f"{args.repo_url.split('/')[-1]}_{args.lang}.txt"
 
-    download_repo(args.repo_url, output_file, args.lang, args.keep_comments, args.branch_or_tag)
+    download_repo(args.repo_url, output_file, args.lang, args.keep_comments, args.branch_or_tag, args.token)
     print(f"Combined {args.lang.capitalize()} source code saved to {output_file}")
