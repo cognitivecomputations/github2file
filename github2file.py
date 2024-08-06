@@ -90,7 +90,14 @@ def download_repo(repo_url, output_file, lang, keep_comments=False, branch_or_ta
                 # Skip directories, non-language files, less likely useful files, hidden directories, and test files
                 if file_path.endswith("/") or not is_file_type(file_path, lang) or not is_likely_useful_file(file_path, lang):
                     continue
-                file_content = zip_file.read(file_path).decode("utf-8")
+                try:
+                    file_content = zip_file.read(file_path).decode("utf-8")
+                except UnicodeDecodeError:
+                    try:
+                        file_content = zip_file.read(file_path).decode("latin-1")
+                    except UnicodeDecodeError:
+                        print(f"Skipping file {file_path} due to encoding issues")
+                        continue
 
                 # Skip test files based on content and files with insufficient substantive content
                 if is_test_file(file_content, lang) or not has_sufficient_content(file_content):
