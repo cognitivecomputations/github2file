@@ -73,8 +73,8 @@ def remove_comments_and_docstrings(source):
     for node in ast.walk(tree):
         if isinstance(node, (ast.FunctionDef, ast.ClassDef, ast.AsyncFunctionDef)) and ast.get_docstring(node):
             node.body = node.body[1:]  # Remove docstring
-        elif isinstance(node, ast.Expr) and isinstance(node.value, ast.Str):
-            node.value.s = ""  # Remove comments
+        elif isinstance(node, ast.Expr) and isinstance(node.value, ast.Constant):
+            node.value.value = ""  # Remove comments
     return ast.unparse(tree)
 
 def construct_download_url(repo_url, branch_or_tag):
@@ -87,7 +87,7 @@ def construct_download_url(repo_url, branch_or_tag):
     else:
         raise ValueError("Unsupported repository URL. Only GitHub and GitLab URLs are supported.")
 
-def download_repo(repo_url, output_file, lang, keep_comments=False, branch_or_tag="main", token=None):
+def download_repo(repo_url, output_file, lang, keep_comments=False, branch_or_tag="main", token=None, claude=False):
     """Download and process files from a GitHub or GitLab repository."""
     download_url = construct_download_url(repo_url, branch_or_tag)
     headers = {}
@@ -216,12 +216,7 @@ if __name__ == "__main__":
     output_file_base = f"{args.repo_url.split('/')[-1]}_{args.lang}.txt"
     output_file = output_file_base if not args.claude else f"{output_file_base}-claude.txt"
 
-    try:
-        download_repo(args.repo_url, output_folder, args.lang, args.keep_comments, args.branch_or_tag, args.claude)
-    except Exception as e:
-        print(f"Error: {e}")
-        sys.exit(1)
+    download_repo(repo_url=args.repo_url, output_file=output_folder, lang=args.lang, keep_comments=args.keep_comments, branch_or_tag=args.branch_or_tag, token=args.token, claude=args.claude)
 
-    download_repo(args.repo_url, output_file, args.lang, args.keep_comments, args.branch_or_tag, args.token)
     print(f"Combined {args.lang.capitalize()} source code saved to {output_file}")
 
